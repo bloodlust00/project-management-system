@@ -1,0 +1,26 @@
+.git
+.github
+.gitignore
+.dockerignore
+.pre-commit-config.yaml
+pyproject.toml
+Makefile
+LICENSE
+README.md
+postman_collection.json
+
+# Backend exclusions
+backend/venv/
+backend/.venv/
+backend/__pycache__/
+backend/.pytest_cache/
+backend/.mypy_cache/
+backend/*.sqlite
+backend/tests/
+
+# Frontend exclusions
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.vite/
+frontend/.eslintcache

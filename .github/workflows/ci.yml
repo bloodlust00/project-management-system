@@ -1,0 +1,78 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master, dev ]
+  pull_request:
+    branches: [ main, master, dev ]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: 'backend/requirements.txt'
+
+      - name: Install System dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpq-dev build-essential
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 black isort mypy pytest pytest-asyncio httpx
+          if [ -f backend/requirements.txt ]; then pip install -r backend/requirements.txt; fi
+
+      - name: Run Black Code Formatter Check
+        run: black --check backend/app
+
+      - name: Run Isort Import Sorting Check
+        run: isort --check-only backend/app
+
+      - name: Run Flake8 Linter Audit
+        run: flake8 backend/app --max-line-length=120 --exclude=migrations
+
+      - name: Run Pytest Test Suite
+        env:
+          POSTGRES_SERVER: localhost
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgrespassword
+          POSTGRES_DB: pms_db
+          POSTGRES_PORT: 5432
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          SECRET_KEY: TESTING_JWT_SECRET_KEY_12345
+        run: |
+          cd backend
+          pytest -v app/tests
+
+  docker-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Verify Backend Container Build
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: false
+          tags: pms-backend:latest
+
+      - name: Verify Frontend Container Build
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: false
+          tags: pms-frontend:latest

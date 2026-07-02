@@ -1,0 +1,33 @@
+# Python cache and temporary files
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+ENV/
+env/
+*.env
+!.env.example
+
+# Node/JavaScript dependencies & builds
+node_modules/
+dist/
+build/
+.eslintcache
+.vite/
+
+# Database files & logs
+*.log
+*.sqlite
+postgres_data/
+redis_data/
+
+# OS files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
