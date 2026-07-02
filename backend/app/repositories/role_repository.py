@@ -1,7 +1,9 @@
 from typing import List, Optional
-from sqlalchemy import select
+
+from app.models.role import Permission, Role
 from app.repositories.base import BaseRepository
-from app.models.role import Role, Permission
+from sqlalchemy import select
+
 
 class RoleRepository(BaseRepository[Role]):
     def __init__(self, db):

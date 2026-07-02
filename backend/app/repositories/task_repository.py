@@ -1,8 +1,10 @@
-from typing import List, Optional, Any
-from sqlalchemy import select, or_, func
-from sqlalchemy.orm import selectinload
+from typing import Any, List, Optional
+
+from app.models.task import Task, TaskPriority, TaskStatus
 from app.repositories.base import BaseRepository
-from app.models.task import Task, TaskStatus, TaskPriority
+from sqlalchemy import func, or_, select
+from sqlalchemy.orm import selectinload
+
 
 class TaskRepository(BaseRepository[Task]):
     def __init__(self, db):
@@ -12,7 +14,7 @@ class TaskRepository(BaseRepository[Task]):
         """Fetch task details along with project and assignees information."""
         query = (
             select(Task)
-            .filter(Task.id == task_id, Task.is_deleted == False)
+            .filter(Task.id == task_id, Task.is_deleted.is_(False))
             .options(selectinload(Task.project), selectinload(Task.assignees))
         )
         result = await self.db.execute(query)
@@ -29,10 +31,10 @@ class TaskRepository(BaseRepository[Task]):
         skip: int = 0,
         limit: int = 10,
         sort_by: str = "created_at",
-        sort_order: str = "desc"
+        sort_order: str = "desc",
     ) -> tuple[List[Task], int]:
         """Fetch paginated tasks with multiple filtering parameters."""
-        query = select(Task).filter(Task.is_deleted == False)
+        query = select(Task).filter(Task.is_deleted.is_(False))
 
         if project_id:
             query = query.filter(Task.project_id == project_id)
@@ -44,12 +46,7 @@ class TaskRepository(BaseRepository[Task]):
             # Check if assignee_id is in assignees list (requires join)
             query = query.filter(Task.assignees.any(id=assignee_id))
         if search:
-            query = query.filter(
-                or_(
-                    Task.title.ilike(f"%{search}%"),
-                    Task.description.ilike(f"%{search}%")
-                )
-            )
+            query = query.filter(or_(Task.title.ilike(f"%{search}%"), Task.description.ilike(f"%{search}%")))
 
         # Count before limits
         count_query = select(func.count()).select_from(query.subquery())

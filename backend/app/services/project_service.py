@@ -1,12 +1,14 @@
-from typing import List, Optional, Any
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.repositories.project_repository import ProjectRepository
-from app.services.activity_service import ActivityService
-from app.core.redis import redis_client
-from app.exceptions.custom import NotFoundException, ForbiddenException
-from app.schemas.project import ProjectCreate, ProjectUpdate, ProjectResponse
-from app.models.project import Project
+from typing import Any, List, Optional
+
 from app.core.logging import logger
+from app.core.redis import redis_client
+from app.exceptions.custom import NotFoundException
+from app.models.project import Project
+from app.repositories.project_repository import ProjectRepository
+from app.schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate
+from app.services.activity_service import ActivityService
+from sqlalchemy.ext.asyncio import AsyncSession
+
 
 class ProjectService:
     def __init__(self, db: AsyncSession):
@@ -28,11 +30,13 @@ class ProjectService:
         limit: int = 10,
         search: Optional[str] = None,
         sort_by: str = "created_at",
-        sort_order: str = "desc"
+        sort_order: str = "desc",
     ) -> tuple[List[dict], int]:
         """Fetch paginated projects. Integrates Redis caching for queries."""
-        cache_key = f"projects:list:skip={skip}:limit={limit}:search={search or ''}:sort_by={sort_by}:sort_order={sort_order}"
-        
+        cache_key = (
+            f"projects:list:skip={skip}:limit={limit}:search={search or ''}:sort_by={sort_by}:sort_order={sort_order}"
+        )
+
         # Check cache
         cached_data = await redis_client.get_cache(cache_key)
         if cached_data:
@@ -41,18 +45,11 @@ class ProjectService:
 
         logger.info(f"Cache MISS for key: {cache_key}. Fetching from DB.")
         projects, total = await self.project_repo.get_projects_paginated(
-            skip=skip,
-            limit=limit,
-            search=search,
-            sort_by=sort_by,
-            sort_order=sort_order
+            skip=skip, limit=limit, search=search, sort_by=sort_by, sort_order=sort_order
         )
 
         # Serialize using Pydantic schema for caching compatibility
-        serialized_projects = [
-            ProjectResponse.model_validate(p).model_dump(mode="json")
-            for p in projects
-        ]
+        serialized_projects = [ProjectResponse.model_validate(p).model_dump(mode="json") for p in projects]
 
         # Write to cache
         cache_payload = {"items": serialized_projects, "total": total}
@@ -81,21 +78,17 @@ class ProjectService:
             action="CREATE",
             entity_type="PROJECT",
             entity_id=project.id,
-            details={"name": project.name}
+            details={"name": project.name},
         )
 
         return project
 
-    async def update_project(
-        self,
-        project_id: Any,
-        project_in: ProjectUpdate,
-        current_user_id: Any
-    ) -> Project:
+    async def update_project(self, project_id: Any, project_in: ProjectUpdate, current_user_id: Any) -> Project:
         """Update project parameters, invalidate list caches, and log updates."""
         project = await self.get_project(project_id)
-        
-        # Enforce Ownership checks if not Admin/Manager (roles check is managed by router RBAC dependencies, but service maintains strict boundaries)
+
+        # Enforce Ownership checks if not Admin/Manager (roles check is managed by router RBAC dependencies,
+        # but service maintains strict boundaries)
         # Note: RBAC middleware blocks this beforehand, but service check is a secondary fail-safe.
 
         update_data = project_in.model_dump(exclude_unset=True)
@@ -111,14 +104,14 @@ class ProjectService:
             action="UPDATE",
             entity_type="PROJECT",
             entity_id=project_id,
-            details={"updated_fields": list(update_data.keys())}
+            details={"updated_fields": list(update_data.keys())},
         )
         return updated_project
 
     async def delete_project(self, project_id: Any, current_user_id: Any) -> Project:
         """Soft-delete project, invalidate list caches, and log deletions."""
         project = await self.get_project(project_id)
-        
+
         await self.project_repo.remove(id=project_id)
 
         # Invalidate cache patterns
@@ -127,9 +120,6 @@ class ProjectService:
 
         # Log activity
         await self.activity_service.log_activity(
-            user_id=current_user_id,
-            action="DELETE",
-            entity_type="PROJECT",
-            entity_id=project_id
+            user_id=current_user_id, action="DELETE", entity_type="PROJECT", entity_id=project_id
         )
         return project

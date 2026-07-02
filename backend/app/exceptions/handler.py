@@ -1,9 +1,10 @@
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
-from fastapi.exceptions import RequestValidationError
-from sqlalchemy.exc import SQLAlchemyError
-from app.exceptions.custom import BaseAppException
 from app.core.logging import logger
+from app.exceptions.custom import BaseAppException
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from sqlalchemy.exc import SQLAlchemyError
+
 
 def register_exception_handlers(app: FastAPI) -> None:
     """Registers exception handlers to standard JSON structures."""
@@ -13,12 +14,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         """Intercepts internal base app exceptions."""
         logger.warning(f"App exception: {exc.message} (status: {exc.status_code})")
         return JSONResponse(
-            status_code=exc.status_code,
-            content={
-                "success": False,
-                "message": exc.message,
-                "errors": exc.errors
-            }
+            status_code=exc.status_code, content={"success": False, "message": exc.message, "errors": exc.errors}
         )
 
     @app.exception_handler(RequestValidationError)
@@ -27,20 +23,11 @@ def register_exception_handlers(app: FastAPI) -> None:
         errors = []
         for error in exc.errors():
             loc = " -> ".join(str(x) for x in error.get("loc", []))
-            errors.append({
-                "field": loc,
-                "message": error.get("msg"),
-                "type": error.get("type")
-            })
-        
+            errors.append({"field": loc, "message": error.get("msg"), "type": error.get("type")})
+
         logger.warning(f"Validation failed for path {request.url.path}: {errors}")
         return JSONResponse(
-            status_code=400,
-            content={
-                "success": False,
-                "message": "Validation failed",
-                "errors": errors
-            }
+            status_code=400, content={"success": False, "message": "Validation failed", "errors": errors}
         )
 
     @app.exception_handler(SQLAlchemyError)
@@ -52,8 +39,8 @@ def register_exception_handlers(app: FastAPI) -> None:
             content={
                 "success": False,
                 "message": "A database error occurred while processing the request.",
-                "errors": []
-            }
+                "errors": [],
+            },
         )
 
     @app.exception_handler(Exception)
@@ -61,10 +48,5 @@ def register_exception_handlers(app: FastAPI) -> None:
         """Intercepts all unhandled python system exceptions."""
         logger.critical(f"Unhandled exception caught on request path {request.url.path}: {exc}", exc_info=True)
         return JSONResponse(
-            status_code=500,
-            content={
-                "success": False,
-                "message": "An unexpected server error occurred.",
-                "errors": []
-            }
+            status_code=500, content={"success": False, "message": "An unexpected server error occurred.", "errors": []}
         )

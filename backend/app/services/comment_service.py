@@ -1,11 +1,13 @@
-from typing import List, Any
-from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Any, List
+
+from app.exceptions.custom import NotFoundException
+from app.models.comment import Comment
 from app.repositories.comment_repository import CommentRepository
 from app.repositories.task_repository import TaskRepository
-from app.services.activity_service import ActivityService
-from app.exceptions.custom import NotFoundException
 from app.schemas.comment import CommentCreate
-from app.models.comment import Comment
+from app.services.activity_service import ActivityService
+from sqlalchemy.ext.asyncio import AsyncSession
+
 
 class CommentService:
     def __init__(self, db: AsyncSession):
@@ -35,11 +37,7 @@ class CommentService:
         if not task:
             raise NotFoundException("Task not found.")
 
-        comment_data = {
-            "content": comment_in.content,
-            "task_id": task_id,
-            "author_id": current_user_id
-        }
+        comment_data = {"content": comment_in.content, "task_id": task_id, "author_id": current_user_id}
 
         comment = await self.comment_repo.create(comment_data)
 
@@ -49,7 +47,7 @@ class CommentService:
             action="CREATE",
             entity_type="COMMENT",
             entity_id=comment.id,
-            details={"task_id": str(task_id)}
+            details={"task_id": str(task_id)},
         )
 
         # Reload to load author info
@@ -67,6 +65,6 @@ class CommentService:
             action="DELETE",
             entity_type="COMMENT",
             entity_id=comment_id,
-            details={"task_id": str(comment.task_id)}
+            details={"task_id": str(comment.task_id)},
         )
         return comment

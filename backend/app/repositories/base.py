@@ -1,9 +1,11 @@
-from typing import Any, Dict, Generic, List, Optional, Type, TypeVar, Union
-from sqlalchemy import select, update, delete, func
-from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Any, Dict, Generic, List, Optional, Type, TypeVar
+
 from app.core.database import Base
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 ModelType = TypeVar("ModelType", bound=Base)
+
 
 class BaseRepository(Generic[ModelType]):
     def __init__(self, model: Type[ModelType], db: AsyncSession):
@@ -14,23 +16,18 @@ class BaseRepository(Generic[ModelType]):
         """Fetch a single record by primary key, filtering out soft-deleted items."""
         query = select(self.model).filter(self.model.id == id)
         if hasattr(self.model, "is_deleted"):
-            query = query.filter(self.model.is_deleted == False)
-        
+            query = query.filter(self.model.is_deleted.is_(False))
+
         result = await self.db.execute(query)
         return result.scalars().first()
 
     async def get_multi(
-        self,
-        *,
-        skip: int = 0,
-        limit: int = 100,
-        sort_by: str = "created_at",
-        sort_order: str = "desc"
+        self, *, skip: int = 0, limit: int = 100, sort_by: str = "created_at", sort_order: str = "desc"
     ) -> List[ModelType]:
         """Fetch multiple records with pagination and sorting."""
         query = select(self.model)
         if hasattr(self.model, "is_deleted"):
-            query = query.filter(self.model.is_deleted == False)
+            query = query.filter(self.model.is_deleted.is_(False))
 
         # Apply sorting
         if hasattr(self.model, sort_by):
@@ -51,7 +48,7 @@ class BaseRepository(Generic[ModelType]):
         """Count active records."""
         query = select(func.count()).select_from(self.model)
         if hasattr(self.model, "is_deleted"):
-            query = query.filter(self.model.is_deleted == False)
+            query = query.filter(self.model.is_deleted.is_(False))
         result = await self.db.execute(query)
         return result.scalar() or 0
 
@@ -67,17 +64,12 @@ class BaseRepository(Generic[ModelType]):
             await self.db.rollback()
             raise e
 
-    async def update(
-        self,
-        *,
-        db_obj: ModelType,
-        obj_in: Dict[str, Any]
-    ) -> ModelType:
+    async def update(self, *, db_obj: ModelType, obj_in: Dict[str, Any]) -> ModelType:
         """Update an existing model record with dynamic parameters."""
         for field, value in obj_in.items():
             if hasattr(db_obj, field):
                 setattr(db_obj, field, value)
-        
+
         self.db.add(db_obj)
         try:
             await self.db.commit()
@@ -92,7 +84,7 @@ class BaseRepository(Generic[ModelType]):
         query = select(self.model).filter(self.model.id == id)
         result = await self.db.execute(query)
         db_obj = result.scalars().first()
-        
+
         if not db_obj:
             return None
 

@@ -1,11 +1,12 @@
 import asyncio
+
+from app.core.config import settings
+from app.core.database import AsyncSessionLocal
+from app.core.logging import logger, setup_logging
+from app.core.security import get_password_hash
+from app.models import Permission, Role, User
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-from app.core.database import AsyncSessionLocal, Base, engine
-from app.core.security import get_password_hash
-from app.core.config import settings
-from app.models import Role, Permission, User
-from app.core.logging import logger, setup_logging
 
 # Configure logging before running seeder standalone
 setup_logging()
@@ -23,30 +24,44 @@ PERMISSIONS = [
     {"name": "Create Comments", "code": "comment:create", "description": "Allows commenting on tasks."},
     {"name": "Delete Comments", "code": "comment:delete", "description": "Allows deleting comments."},
     {"name": "Manage Users", "code": "user:manage", "description": "Allows managing user accounts and roles."},
-    {"name": "Read Audit Logs", "code": "audit:read", "description": "Allows viewing application audit and activity logs."},
+    {
+        "name": "Read Audit Logs",
+        "code": "audit:read",
+        "description": "Allows viewing application audit and activity logs.",
+    },
 ]
 
 # Definitions of default roles and their associated permission codes
 ROLE_PERMISSIONS_MAPPING = {
     "Admin": [
-        "project:create", "project:read", "project:update", "project:delete",
-        "task:create", "task:read", "task:update", "task:delete",
-        "comment:create", "comment:delete",
+        "project:create",
+        "project:read",
+        "project:update",
+        "project:delete",
+        "task:create",
+        "task:read",
+        "task:update",
+        "task:delete",
+        "comment:create",
+        "comment:delete",
         "user:manage",
-        "audit:read"
+        "audit:read",
     ],
     "Manager": [
-        "project:create", "project:read", "project:update",
-        "task:create", "task:read", "task:update", "task:delete",
-        "comment:create", "comment:delete",
-        "audit:read"
-    ],
-    "Employee": [
+        "project:create",
         "project:read",
-        "task:read", "task:update",
-        "comment:create"
-    ]
+        "project:update",
+        "task:create",
+        "task:read",
+        "task:update",
+        "task:delete",
+        "comment:create",
+        "comment:delete",
+        "audit:read",
+    ],
+    "Employee": ["project:read", "task:read", "task:update", "comment:create"],
 }
+
 
 async def seed_data():
     """Executes database seeding for Roles, Permissions, and Initial Admin account."""
@@ -89,7 +104,7 @@ async def seed_data():
             for code in perm_codes:
                 if code in permissions_map:
                     role.permissions.append(permissions_map[code])
-            
+
             roles_map[role_name] = role
 
         await db.commit()
@@ -105,7 +120,7 @@ async def seed_data():
                 email=settings.INITIAL_ADMIN_EMAIL,
                 hashed_password=hashed_pw,
                 full_name="System Administrator",
-                is_active=True
+                is_active=True,
             )
             db.add(admin_user)
             admin_user.roles.append(roles_map["Admin"])
@@ -115,6 +130,7 @@ async def seed_data():
 
         await db.commit()
         logger.info("Database seeding successfully completed.")
+
 
 if __name__ == "__main__":
     asyncio.run(seed_data())

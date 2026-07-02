@@ -1,8 +1,10 @@
-from typing import List, Optional, Any
-from sqlalchemy import select, or_, func
-from sqlalchemy.orm import selectinload
-from app.repositories.base import BaseRepository
+from typing import Any, List, Optional
+
 from app.models.project import Project
+from app.repositories.base import BaseRepository
+from sqlalchemy import func, or_, select
+from sqlalchemy.orm import selectinload
+
 
 class ProjectRepository(BaseRepository[Project]):
     def __init__(self, db):
@@ -10,7 +12,11 @@ class ProjectRepository(BaseRepository[Project]):
 
     async def get_project_with_owner(self, project_id: Any) -> Optional[Project]:
         """Fetch project details along with owner information."""
-        query = select(Project).filter(Project.id == project_id, Project.is_deleted == False).options(selectinload(Project.owner))
+        query = (
+            select(Project)
+            .filter(Project.id == project_id, Project.is_deleted.is_(False))
+            .options(selectinload(Project.owner))
+        )
         result = await self.db.execute(query)
         return result.scalars().first()
 
@@ -21,18 +27,13 @@ class ProjectRepository(BaseRepository[Project]):
         limit: int = 10,
         search: Optional[str] = None,
         sort_by: str = "created_at",
-        sort_order: str = "desc"
+        sort_order: str = "desc",
     ) -> tuple[List[Project], int]:
         """Fetch paginated projects matching optional search query."""
-        query = select(Project).filter(Project.is_deleted == False)
+        query = select(Project).filter(Project.is_deleted.is_(False))
 
         if search:
-            query = query.filter(
-                or_(
-                    Project.name.ilike(f"%{search}%"),
-                    Project.description.ilike(f"%{search}%")
-                )
-            )
+            query = query.filter(or_(Project.name.ilike(f"%{search}%"), Project.description.ilike(f"%{search}%")))
 
         # Count before limit/offset
         count_query = select(func.count()).select_from(query.subquery())
@@ -51,6 +52,6 @@ class ProjectRepository(BaseRepository[Project]):
 
         # Load owner information automatically
         query = query.options(selectinload(Project.owner)).offset(skip).limit(limit)
-        
+
         result = await self.db.execute(query)
         return list(result.scalars().all()), total_count

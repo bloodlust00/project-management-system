@@ -1,5 +1,5 @@
 import re
-from app.exceptions.custom import BadRequestException
+
 
 def validate_password_strength(password: str) -> str:
     """Verifies that the password meets security strength requirements."""
@@ -14,6 +14,7 @@ def validate_password_strength(password: str) -> str:
     if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
         raise ValueError("Password must contain at least one special character.")
     return password
+
 
 def sanitize_string(value: str) -> str:
     """Sanitizes input strings by stripping away potential HTML/Javascript tags to prevent XSS."""

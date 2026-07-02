@@ -1,8 +1,10 @@
 import uuid
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, ConfigDict
+
 from app.schemas.user import UserResponse
+from pydantic import BaseModel, ConfigDict
+
 
 class ActivityLogResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)

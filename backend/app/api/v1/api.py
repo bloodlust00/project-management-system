@@ -1,5 +1,5 @@
+from app.api.v1.routers import auth, comments, metrics, projects, roles, tasks, users
 from fastapi import APIRouter
-from app.api.v1.routers import auth, users, projects, tasks, comments, roles, metrics
 
 api_router = APIRouter()
 

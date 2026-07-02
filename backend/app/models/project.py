@@ -1,9 +1,15 @@
-from typing import List
-from sqlalchemy import String, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from typing import TYPE_CHECKING, List
+
 from app.core.database import Base
 from app.models.base import BaseModelMixin
+from sqlalchemy import ForeignKey, String
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+if TYPE_CHECKING:
+    from app.models.task import Task
+    from app.models.user import User
+
 
 class Project(Base, BaseModelMixin):
     __tablename__ = "projects"
@@ -14,7 +20,4 @@ class Project(Base, BaseModelMixin):
 
     # Relationships
     owner: Mapped["User"] = relationship(back_populates="owned_projects")
-    tasks: Mapped[List["Task"]] = relationship(
-        back_populates="project",
-        cascade="all, delete-orphan"
-    )
+    tasks: Mapped[List["Task"]] = relationship(back_populates="project", cascade="all, delete-orphan")

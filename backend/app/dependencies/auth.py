@@ -1,22 +1,21 @@
-from typing import List, Optional
+from typing import List
+
+from app.core.config import settings
+from app.core.redis import redis_client
+from app.core.security import decode_token
+from app.dependencies.db import get_db
+from app.exceptions.custom import ForbiddenException, UnauthorizedException
+from app.models.user import User
+from app.repositories.user_repository import UserRepository
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.config import settings
-from app.core.security import decode_token
-from app.core.redis import redis_client
-from app.dependencies.db import get_db
-from app.repositories.user_repository import UserRepository
-from app.exceptions.custom import UnauthorizedException, ForbiddenException
-from app.models.user import User
 
 # Define the OAuth2 bearer scheme pointing to login route
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login")
 
-async def get_current_user(
-    db: AsyncSession = Depends(get_db),
-    token: str = Depends(oauth2_scheme)
-) -> User:
+
+async def get_current_user(db: AsyncSession = Depends(get_db), token: str = Depends(oauth2_scheme)) -> User:
     """FastAPI dependency resolving current user context from JWT token."""
     payload = decode_token(token)
     if not payload or payload.get("type") != "access":
@@ -34,6 +33,7 @@ async def get_current_user(
         raise UnauthorizedException("Token is invalid or blacklisted.")
 
     import uuid as uuid_pkg
+
     try:
         user_uuid = uuid_pkg.UUID(user_id)
     except ValueError:
@@ -43,11 +43,12 @@ async def get_current_user(
     user = await user_repo.get_with_roles(user_uuid)
     if not user:
         raise UnauthorizedException("User not found.")
-    
+
     if not user.is_active:
         raise UnauthorizedException("User account is disabled.")
 
     return user
+
 
 class PermissionChecker:
     def __init__(self, allowed_permissions: List[str]):
@@ -70,6 +71,7 @@ class PermissionChecker:
         has_permission = any(perm in user_permission_codes for perm in self.allowed_permissions)
         if not has_permission:
             raise ForbiddenException("Permission denied. Insufficient access rights.")
+
 
 class RoleChecker:
     def __init__(self, allowed_roles: List[str]):

@@ -1,6 +1,8 @@
 from typing import AsyncGenerator
-from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.database import AsyncSessionLocal
+from sqlalchemy.ext.asyncio import AsyncSession
+
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """Dependency generating async database sessions with automatic close handles."""

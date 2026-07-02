@@ -1,10 +1,12 @@
 import uuid
 from datetime import datetime
 from typing import List, Optional
-from pydantic import BaseModel, ConfigDict, Field, field_validator
-from app.validators.auth_validators import sanitize_string
-from app.models.task import TaskStatus, TaskPriority
+
+from app.models.task import TaskPriority, TaskStatus
 from app.schemas.user import UserResponse
+from app.validators.auth_validators import sanitize_string
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
 
 class TaskCreate(BaseModel):
     title: str = Field(..., min_length=2, max_length=200)
@@ -12,7 +14,9 @@ class TaskCreate(BaseModel):
     status: TaskStatus = TaskStatus.TODO
     priority: TaskPriority = TaskPriority.MEDIUM
     due_date: Optional[datetime] = None
-    assignee_ids: Optional[List[uuid.UUID]] = Field(default=[], description="List of UUIDs representing user assignees.")
+    assignee_ids: Optional[List[uuid.UUID]] = Field(
+        default=[], description="List of UUIDs representing user assignees."
+    )
 
     @field_validator("title", "description")
     @classmethod
@@ -20,6 +24,7 @@ class TaskCreate(BaseModel):
         if v is not None:
             return sanitize_string(v)
         return v
+
 
 class TaskUpdate(BaseModel):
     title: Optional[str] = Field(None, min_length=2, max_length=200)
@@ -35,6 +40,7 @@ class TaskUpdate(BaseModel):
         if v is not None:
             return sanitize_string(v)
         return v
+
 
 class TaskResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)

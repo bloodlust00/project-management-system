@@ -1,8 +1,9 @@
-from typing import List, Optional, Any
-from sqlalchemy import select, func
-from sqlalchemy.orm import selectinload
-from app.repositories.base import BaseRepository
+from typing import Any, List, Optional
+
 from app.models.activity import ActivityLog
+from app.repositories.base import BaseRepository
+from sqlalchemy import func, select
+
 
 class ActivityRepository(BaseRepository[ActivityLog]):
     def __init__(self, db):
@@ -15,7 +16,7 @@ class ActivityRepository(BaseRepository[ActivityLog]):
         entity_type: Optional[str] = None,
         action: Optional[str] = None,
         skip: int = 0,
-        limit: int = 20
+        limit: int = 20,
     ) -> tuple[List[ActivityLog], int]:
         """Fetch paginated audit activity logs with filters."""
         query = select(ActivityLog)
@@ -34,6 +35,6 @@ class ActivityRepository(BaseRepository[ActivityLog]):
 
         # Sort by creation time descending (most recent first)
         query = query.order_by(ActivityLog.created_at.desc()).offset(skip).limit(limit)
-        
+
         result = await self.db.execute(query)
         return list(result.scalars().all()), total_count

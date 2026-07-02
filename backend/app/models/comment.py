@@ -1,8 +1,15 @@
-from sqlalchemy import String, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from typing import TYPE_CHECKING
+
 from app.core.database import Base
 from app.models.base import BaseModelMixin
+from sqlalchemy import ForeignKey, String
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+if TYPE_CHECKING:
+    from app.models.task import Task
+    from app.models.user import User
+
 
 class Comment(Base, BaseModelMixin):
     __tablename__ = "comments"

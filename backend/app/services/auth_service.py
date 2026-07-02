@@ -1,14 +1,23 @@
 from datetime import datetime, timezone
 from typing import Optional
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.repositories.user_repository import UserRepository
-from app.repositories.role_repository import RoleRepository
-from app.services.activity_service import ActivityService
-from app.core.security import verify_password, get_password_hash, create_access_token, create_refresh_token, decode_token
+
+from app.core.logging import logger
 from app.core.redis import redis_client
-from app.exceptions.custom import ConflictException, UnauthorizedException, BadRequestException
-from app.schemas.auth import UserRegister, UserLogin
+from app.core.security import (
+    create_access_token,
+    create_refresh_token,
+    decode_token,
+    get_password_hash,
+    verify_password,
+)
+from app.exceptions.custom import ConflictException, UnauthorizedException
+from app.repositories.role_repository import RoleRepository
+from app.repositories.user_repository import UserRepository
+from app.schemas.auth import UserLogin, UserRegister
 from app.schemas.user import UserResponse
+from app.services.activity_service import ActivityService
+from sqlalchemy.ext.asyncio import AsyncSession
+
 
 class AuthService:
     def __init__(self, db: AsyncSession):
@@ -36,12 +45,12 @@ class AuthService:
             "email": user_in.email,
             "hashed_password": hashed_password,
             "full_name": user_in.full_name,
-            "is_active": True
+            "is_active": True,
         }
 
         # Create user
         user = await self.user_repo.create(user_data)
-        
+
         # Link role (many-to-many)
         user.roles.append(employee_role)
         try:
@@ -53,11 +62,7 @@ class AuthService:
 
         # Log activity
         await self.activity_service.log_activity(
-            user_id=user.id,
-            action="REGISTER",
-            entity_type="USER",
-            entity_id=user.id,
-            details={"email": user.email}
+            user_id=user.id, action="REGISTER", entity_type="USER", entity_id=user.id, details={"email": user.email}
         )
 
         return user
@@ -67,7 +72,7 @@ class AuthService:
         user = await self.user_repo.get_by_email(user_login.email)
         if not user or not verify_password(user_login.password, user.hashed_password):
             raise UnauthorizedException("Incorrect email or password.")
-        
+
         if not user.is_active:
             raise UnauthorizedException("This user account is inactive.")
 
@@ -76,12 +81,7 @@ class AuthService:
         refresh_token = create_refresh_token(subject=user.id)
 
         # Log authentication activity
-        await self.activity_service.log_activity(
-            user_id=user.id,
-            action="LOGIN",
-            entity_type="USER",
-            entity_id=user.id
-        )
+        await self.activity_service.log_activity(user_id=user.id, action="LOGIN", entity_type="USER", entity_id=user.id)
 
         # Return token payload
         user_response = UserResponse.model_validate(user)
@@ -89,7 +89,7 @@ class AuthService:
             "access_token": access_token,
             "refresh_token": refresh_token,
             "token_type": "bearer",
-            "user": user_response
+            "user": user_response,
         }
 
     async def logout(self, refresh_token: str, access_token: Optional[str] = None) -> None:
@@ -105,14 +105,11 @@ class AuthService:
                 ttl = int(exp - now)
                 if ttl > 0:
                     await redis_client.blacklist_token(jti, ttl)
-            
+
             # Log activity
             if sub:
                 await self.activity_service.log_activity(
-                    user_id=sub,
-                    action="LOGOUT",
-                    entity_type="USER",
-                    entity_id=sub
+                    user_id=sub, action="LOGOUT", entity_type="USER", entity_id=sub
                 )
 
         # Blacklist access token if provided
@@ -155,6 +152,7 @@ class AuthService:
 
         # Fetch user
         import uuid as uuid_pkg
+
         try:
             user_uuid = uuid_pkg.UUID(sub)
         except ValueError:
@@ -168,9 +166,4 @@ class AuthService:
         new_refresh = create_refresh_token(subject=user.id)
 
         user_response = UserResponse.model_validate(user)
-        return {
-            "access_token": new_access,
-            "refresh_token": new_refresh,
-            "token_type": "bearer",
-            "user": user_response
-        }
+        return {"access_token": new_access, "refresh_token": new_refresh, "token_type": "bearer", "user": user_response}

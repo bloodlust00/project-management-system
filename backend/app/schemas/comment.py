@@ -1,8 +1,10 @@
 import uuid
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict, Field, field_validator
-from app.validators.auth_validators import sanitize_string
+
 from app.schemas.user import UserResponse
+from app.validators.auth_validators import sanitize_string
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
 
 class CommentCreate(BaseModel):
     content: str = Field(..., min_length=1, max_length=1000)
@@ -11,6 +13,7 @@ class CommentCreate(BaseModel):
     @classmethod
     def clean_content(cls, v: str) -> str:
         return sanitize_string(v)
+
 
 class CommentResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)

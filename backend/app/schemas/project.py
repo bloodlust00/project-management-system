@@ -1,9 +1,11 @@
 import uuid
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, ConfigDict, Field, field_validator
-from app.validators.auth_validators import sanitize_string
+
 from app.schemas.user import UserResponse
+from app.validators.auth_validators import sanitize_string
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
 
 class ProjectCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
@@ -16,6 +18,7 @@ class ProjectCreate(BaseModel):
             return sanitize_string(v)
         return v
 
+
 class ProjectUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=2, max_length=100)
     description: Optional[str] = Field(None, max_length=1000)
@@ -26,6 +29,7 @@ class ProjectUpdate(BaseModel):
         if v is not None:
             return sanitize_string(v)
         return v
+
 
 class ProjectResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)

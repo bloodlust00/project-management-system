@@ -1,8 +1,10 @@
 import json
 from typing import Any, Optional
+
 import redis.asyncio as aioredis
 from app.core.config import settings
 from app.core.logging import logger
+
 
 class RedisClient:
     def __init__(self):
@@ -11,11 +13,7 @@ class RedisClient:
     def connect(self):
         """Initializes connection to Redis instance."""
         try:
-            self.client = aioredis.from_url(
-                settings.REDIS_URL,
-                decode_responses=True,
-                socket_timeout=5.0
-            )
+            self.client = aioredis.from_url(settings.REDIS_URL, decode_responses=True, socket_timeout=5.0)
             logger.info("Successfully connected to Redis.")
         except Exception as e:
             logger.error(f"Failed to connect to Redis at {settings.REDIS_URL}: {e}")
@@ -109,6 +107,7 @@ class RedisClient:
         except Exception as e:
             logger.error(f"Failed to delete keys by pattern {pattern}: {e}")
             return False
+
 
 redis_client = RedisClient()
 # Connect to Redis immediately on module loading for non-async parts if needed

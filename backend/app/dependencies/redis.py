@@ -1,4 +1,5 @@
-from app.core.redis import redis_client, RedisClient
+from app.core.redis import RedisClient, redis_client
+
 
 def get_redis() -> RedisClient:
     """Dependency injecting the application-wide Redis connection manager."""

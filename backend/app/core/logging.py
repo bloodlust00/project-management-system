@@ -1,12 +1,15 @@
 import logging
 import sys
+
 from loguru import logger
+
 
 class InterceptHandler(logging.Handler):
     """
     Default handler from python logging to loguru.
-    See: https://loguru.readthedocs.io/en/stable/resources/recipes.html#integrating-with-redirection-compatibility-with-standard-logging
+    See: Loguru docs recipes section on standard logging integration.
     """
+
     def emit(self, record):
         # Get corresponding Loguru level if it exists.
         try:
@@ -21,6 +24,7 @@ class InterceptHandler(logging.Handler):
             depth += 1
 
         logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
+
 
 def setup_logging():
     """
@@ -41,7 +45,7 @@ def setup_logging():
             "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> | "
             "<level>{message}</level>"
         ),
-        level="INFO"
+        level="INFO",
     )
 
     # Intercept standard library logging messages

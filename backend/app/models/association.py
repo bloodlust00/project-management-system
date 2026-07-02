@@ -1,6 +1,6 @@
+from app.core.database import Base
 from sqlalchemy import Column, ForeignKey, Table
 from sqlalchemy.dialects.postgresql import UUID
-from app.core.database import Base
 
 # Many-to-Many association between Users and Roles
 user_roles = Table(

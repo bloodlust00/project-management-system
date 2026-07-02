@@ -1,18 +1,18 @@
-import os
 from typing import List, Union
+
 from pydantic import AnyHttpUrl, BeforeValidator, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing_extensions import Annotated
+
 
 def any_http_url_to_str(v: Union[str, AnyHttpUrl]) -> str:
     if isinstance(v, AnyHttpUrl):
         return str(v)
     return v
 
+
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(
-        env_file=".env", env_ignore_empty=True, extra="ignore"
-    )
+    model_config = SettingsConfigDict(env_file=".env", env_ignore_empty=True, extra="ignore")
 
     API_V1_STR: str = "/api/v1"
     PROJECT_NAME: str = "Project Management System API"
@@ -20,7 +20,13 @@ class Settings(BaseSettings):
     # CORS configuration
     BACKEND_CORS_ORIGINS: Annotated[
         List[str], BeforeValidator(lambda v: [x.strip() for x in v.split(",")] if isinstance(v, str) else v)
-    ] = ["http://localhost", "http://127.0.0.1", "http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000"]
+    ] = [
+        "http://localhost",
+        "http://127.0.0.1",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:3000",
+    ]
 
     # Security & JWT
     SECRET_KEY: str = "SUPER_SECRET_REPLACE_ME_IN_PRODUCTION_JWT_SECRET_KEY_12345"
@@ -67,5 +73,6 @@ class Settings(BaseSettings):
     # Initial Admin Seeding
     INITIAL_ADMIN_EMAIL: str = "admin@example.com"
     INITIAL_ADMIN_PASSWORD: str = "Admin@1234!"
+
 
 settings = Settings()

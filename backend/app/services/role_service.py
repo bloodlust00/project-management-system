@@ -1,7 +1,9 @@
 from typing import List, Optional
-from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.role import Permission, Role
 from app.repositories.role_repository import RoleRepository
-from app.models.role import Role, Permission
+from sqlalchemy.ext.asyncio import AsyncSession
+
 
 class RoleService:
     def __init__(self, db: AsyncSession):

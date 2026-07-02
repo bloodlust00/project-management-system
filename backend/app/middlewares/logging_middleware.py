@@ -1,9 +1,11 @@
 import time
 import uuid
+
+from app.core.logging import logger
+from app.core.security import decode_token
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
-from app.core.security import decode_token
-from app.core.logging import logger
+
 
 class LoggingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
@@ -28,7 +30,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
                 pass
 
         start_time = time.perf_counter()
-        
+
         # Log request initiation details
         logger.info(
             f"Request Start - ID: {request_id} | Correlation: {correlation_id} | "
@@ -38,21 +40,21 @@ class LoggingMiddleware(BaseHTTPMiddleware):
 
         try:
             response = await call_next(request)
-            
+
             process_time_ms = (time.perf_counter() - start_time) * 1000
-            
+
             # Attach header tracking identifiers
             response.headers["X-Request-ID"] = request_id
             response.headers["X-Correlation-ID"] = correlation_id
             response.headers["X-Process-Time-Ms"] = f"{process_time_ms:.2f}"
-            
+
             logger.info(
                 f"Request End - ID: {request_id} | Correlation: {correlation_id} | "
                 f"User: {user_id} | Status: {response.status_code} | "
                 f"Time: {process_time_ms:.2f}ms"
             )
             return response
-            
+
         except Exception as e:
             process_time_ms = (time.perf_counter() - start_time) * 1000
             logger.error(
